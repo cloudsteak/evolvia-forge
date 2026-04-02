@@ -5,7 +5,7 @@ resource "aws_iam_user" "trainee" {
 
 resource "aws_iam_user_login_profile" "trainee_password" {
   user                    = aws_iam_user.trainee.name
-  password                = var.trainee_password
+  password_length         = 18
   password_reset_required = false
 }
 
