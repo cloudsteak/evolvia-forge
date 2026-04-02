@@ -86,13 +86,10 @@ jobs:
         continue-on-error: true
         run: |
           # Apply Terraform configuration
-          terraform apply -auto-approve -var='student_username=${{ github.event.inputs.student_username }}'
-          sleep 15
-          # Update IAM user password
-          aws iam update-login-profile \
-            --user-name ${{ github.event.inputs.student_username }} \
-            --password "${{ github.event.inputs.student_password }}" \
-            --no-password-reset-required
+          terraform apply -auto-approve \
+            -var='trainee_username=${{ github.event.inputs.student_username }}' \
+            -var='trainee_password=${{ github.event.inputs.student_password }}' \
+            -var='aws_region=${{ vars.AWS_REGION }}'
 
       - name: Set lab status output
         id: status
@@ -105,10 +102,19 @@ jobs:
 
       - name: Terraform Destroy
         id: destroy
-        working-directory: ${{ github.workspace }}/aws/labs/${{ github.event.inputs.lab }}
         if: github.event.inputs.action == 'destroy'
-        run: |
-          terraform destroy -auto-approve -var='student_username=${{ github.event.inputs.student_username }}'
+        uses: nick-fields/retry@v3
+        with:
+          max_attempts: 3
+          timeout_minutes: 30
+          retry_wait_seconds: 15
+          command: |
+            # Go to the lab directory
+            cd ${{ github.workspace }}/aws/labs/${{ github.event.inputs.lab }}
+            # Destroy Terraform-managed infrastructure
+            terraform destroy -auto-approve \
+              -var='trainee_username=${{ github.event.inputs.student_username }}' \
+              -var='aws_region=${{ vars.AWS_REGION }}'
 
   notify-backend:
     name: Notify backend when lab is ready
@@ -122,3 +128,18 @@ jobs:
       AUTH0_AUDIENCE: ${{ secrets.AUTH0_AUDIENCE }}
       AUTH0_CLIENT_ID: ${{ secrets.AUTH0_CLIENT_ID }}
       AUTH0_CLIENT_SECRET: ${{ secrets.AUTH0_CLIENT_SECRET }}
+
+  alert-manager:
+    name: Alert Manager Notification
+    needs: terraform
+    runs-on: ubuntu-latest
+    if: failure()
+    steps:
+      - name: Placeholder notification
+        run: |
+          # This is where the Slack alert will go.
+          curl -X POST -H 'Content-type: application/json' \
+          --data "{
+              \"text\": \"🚨 AWS Lab Manager 🚨\\n   - Action: ${{ github.event.inputs.action }}\\n   - User: ${{ github.event.inputs.student_username }}\\n   - Status: ${{ needs.terraform.outputs.status }}\\n   - Run: $GITHUB_RUN_NUMBER\"
+          }" \
+          ${{ secrets.ALERT_SLACK_WEBHOOK_URL }}
