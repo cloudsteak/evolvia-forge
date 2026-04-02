@@ -1,4 +1,4 @@
 
-output "student_username" {
-  value = aws_iam_user.student.name
+output "trainee_username" {
+  value = aws_iam_user.trainee.name
 }

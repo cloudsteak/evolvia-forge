@@ -1,5 +1,5 @@
-output "student_username" {
-  value = module.student.student_username
+output "trainee_username" {
+  value = module.trainee.trainee_username
 }
 
 
