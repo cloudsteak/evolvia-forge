@@ -105,6 +105,12 @@ jobs:
             echo "status=failed" >> $GITHUB_OUTPUT
           fi
 
+      - name: Resource Cleanup
+        id: cleanup
+        if: github.event.inputs.action == 'destroy'
+        run: |
+          python3 aws/scripts/cleanup_resources.py ${{ github.event.inputs.student_username }} ${{ vars.AWS_REGION }}
+
       - name: Terraform Destroy
         id: destroy
         if: github.event.inputs.action == 'destroy'
