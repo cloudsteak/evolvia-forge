@@ -5,17 +5,26 @@ variable "aws_region" {
 
 }
 
-variable "student_username" {
-  description = "The student username"
+variable "trainee_username" {
+  description = "The trainee username"
   type        = string
 
 }
 
+variable "trainee_password" {
+  description = "The trainee password"
+  type        = string
+  sensitive   = true
+}
 
-locals {
-  tags = {
-    Name        = "cloudmentor-lab"
-    Environment = "training"
 
+variable "tags" {
+  description = "Tags to be assigned to the resources"
+  type        = map(string)
+  default = {
+    environment = "training"
+    owner       = "cloudmentor"
+    trainee     = "true"
+    lab         = "basic"
   }
 }
