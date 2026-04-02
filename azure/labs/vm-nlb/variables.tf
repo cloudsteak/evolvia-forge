@@ -31,7 +31,7 @@ variable "tags" {
   default = {
     environment = "training"
     owner       = "cloudmentor"
-    student     = "true"
+    trainee     = "true"
     lab         = "basic"
   }
 
