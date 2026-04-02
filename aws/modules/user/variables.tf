@@ -10,12 +10,6 @@ variable "trainee_username" {
 }
 
 
-variable "trainee_password" {
-  description = "The trainee password"
-  type        = string
-  sensitive   = true
-}
-
 variable "trainee_group_name" {
   description = "The trainee group name"
   type        = string

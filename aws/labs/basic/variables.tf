@@ -11,12 +11,6 @@ variable "trainee_username" {
 
 }
 
-variable "trainee_password" {
-  description = "The trainee password"
-  type        = string
-  sensitive   = true
-}
-
 
 variable "tags" {
   description = "Tags to be assigned to the resources"

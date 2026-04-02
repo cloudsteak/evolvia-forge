@@ -88,8 +88,13 @@ jobs:
           # Apply Terraform configuration
           terraform apply -auto-approve \
             -var='trainee_username=${{ github.event.inputs.student_username }}' \
-            -var='trainee_password=${{ github.event.inputs.student_password }}' \
             -var='aws_region=${{ vars.AWS_REGION }}'
+          sleep 15
+          # Update IAM user password
+          aws iam update-login-profile \
+            --user-name ${{ github.event.inputs.student_username }} \
+            --password "${{ github.event.inputs.student_password }}" \
+            --no-password-reset-required
 
       - name: Set lab status output
         id: status
