@@ -21,6 +21,7 @@ on:
         options:
           - "basic"
           - "s3-staticwebsite"
+          - "ec2-webserver"
         required: true
         default: "basic"
       action:
