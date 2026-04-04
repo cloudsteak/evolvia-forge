@@ -74,6 +74,14 @@ resource "aws_security_group" "trainee_sg" {
   }
 
   ingress {
+    from_port   = 3306
+    to_port     = 3306
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+    description = "RDS MySQL"
+  }
+
+  ingress {
     from_port   = 3389
     to_port     = 3389
     protocol    = "tcp"

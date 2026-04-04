@@ -20,6 +20,9 @@ on:
         type: choice
         options:
           - "basic"
+          - "s3-staticwebsite"
+          - "ec2-webserver"
+          - "rds-mysql"
         required: true
         default: "basic"
       action:
