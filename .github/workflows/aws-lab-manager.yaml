@@ -20,6 +20,7 @@ on:
         type: choice
         options:
           - "basic"
+          - "s3-staticwebsite"
         required: true
         default: "basic"
       action:
