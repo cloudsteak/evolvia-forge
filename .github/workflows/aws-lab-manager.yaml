@@ -95,17 +95,34 @@ jobs:
           terraform apply -auto-approve \
             -var='trainee_username=${{ github.event.inputs.student_username }}' \
             -var='aws_region=${{ vars.AWS_REGION }}'
-          sleep 15
-          # Update IAM user password
-          aws iam update-login-profile \
-            --user-name ${{ github.event.inputs.student_username }} \
-            --password "${{ github.event.inputs.student_password }}" \
-            --no-password-reset-required
+
+      - name: Set IAM user password
+        id: set-password
+        if: github.event.inputs.action == 'apply' && steps.apply.outcome == 'success'
+        env:
+          STUDENT_USERNAME: ${{ github.event.inputs.student_username }}
+          STUDENT_PASSWORD: ${{ github.event.inputs.student_password }}
+        run: |
+          sleep 15 # Wait for IAM user to be fully available
+          set -euo pipefail
+          echo "::add-mask::$STUDENT_PASSWORD"
+
+          if aws iam get-login-profile --user-name "$STUDENT_USERNAME" >/dev/null 2>&1; then
+            aws iam update-login-profile \
+              --user-name "$STUDENT_USERNAME" \
+              --password "$STUDENT_PASSWORD" \
+              --no-password-reset-required
+          else
+            aws iam create-login-profile \
+              --user-name "$STUDENT_USERNAME" \
+              --password "$STUDENT_PASSWORD" \
+              --no-password-reset-required
+          fi
 
       - name: Set lab status output
         id: status
         run: |
-          if [ "${{ steps.apply.outcome }}" == "success" ]; then
+          if [ "${{ github.event.inputs.action }}" == "apply" ] && [ "${{ steps.apply.outcome }}" == "success" ] && [ "${{ steps.set-password.outcome }}" == "success" ]; then
             echo "status=ready" >> $GITHUB_OUTPUT
           else
             echo "status=failed" >> $GITHUB_OUTPUT
