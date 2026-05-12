@@ -31,6 +31,8 @@ def delete_resources(username, region):
                     logger.error(f"Failed to execute {func.__name__} after 10 attempts.")
                     return False
 
+    delete_ec2_key_pairs(ec2_client, username, retry_delete)
+
     # 1. Delete resources by 'owner' tag
     logger.info(f"Searching for resources with tag 'owner={username}' in region {region}...")
     try:
@@ -84,6 +86,30 @@ def empty_and_delete_s3(client, bucket_name, retry_func):
 
     retry_func(empty_bucket)
     retry_func(client.delete_bucket, Bucket=bucket_name)
+
+def delete_ec2_key_pairs(client, username, retry_func):
+    logger.info(f"Searching for EC2 Key Pairs with tag 'owner={username}'...")
+
+    key_names = set()
+
+    try:
+        tagged = client.describe_key_pairs(
+            Filters=[{'Name': 'tag:owner', 'Values': [username]}]
+        ).get('KeyPairs', [])
+        for key in tagged:
+            key_name = key.get('KeyName')
+            if key_name:
+                key_names.add(key_name)
+    except Exception as e:
+        logger.warning(f"Failed to list tagged EC2 Key Pairs for owner '{username}': {e}")
+
+    if not key_names:
+        logger.info(f"No EC2 Key Pairs found with tag 'owner={username}'.")
+        return
+
+    for key_name in sorted(key_names):
+        logger.info(f"Deleting EC2 Key Pair '{key_name}'...")
+        retry_func(client.delete_key_pair, KeyName=key_name)
 
 if __name__ == "__main__":
     if len(sys.argv) < 3:
