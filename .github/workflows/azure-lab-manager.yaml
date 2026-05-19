@@ -198,7 +198,7 @@ jobs:
     name: Notify backend when lab is ready
     needs: terraform
     if: github.event.inputs.action == 'apply'
-    uses: cloudsteak/student-lab/.github/workflows/lab-ready-callback.yml@main
+    uses: cloudsteak/evolvia-forge/.github/workflows/lab-ready-callback.yml@main
     with:
       student_username: ${{ github.event.inputs.student_username }}
       status: ${{ needs.terraform.outputs.status }}
