@@ -20,6 +20,7 @@ on:
         type: choice
         options:
           - "basic"
+          - "ec2-linux"
           - "s3-staticwebsite"
           - "ec2-webserver"
           - "rds-mysql"
