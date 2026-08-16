@@ -22,7 +22,7 @@ on:
           - "basic"
           - "ec2-linux"
           - "s3-staticwebsite"
-          - "ec2-linix-apache"
+          - "ec2-linux-apache"
           - "rds-mysql"
         required: true
         default: "basic"
