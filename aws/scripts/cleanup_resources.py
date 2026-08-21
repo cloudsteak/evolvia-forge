@@ -1,5 +1,4 @@
 import boto3
-import os
 import sys
 import time
 import logging
@@ -59,6 +58,12 @@ def delete_resources(username, region):
         elif ':lambda:' in arn and ':function:' in arn:
             func_name = arn.split(':')[-1]
             retry_delete(lambda_client.delete_function, FunctionName=func_name)
+        elif ':ec2:' in arn and ':image/' in arn:
+            image_id = arn.split('/')[-1]
+            retry_delete(ec2_client.deregister_image, ImageId=image_id)
+        elif ':ec2:' in arn and ':snapshot/' in arn:
+            snapshot_id = arn.split('/')[-1]
+            retry_delete(ec2_client.delete_snapshot, SnapshotId=snapshot_id)
         # Add more types as needed...
 
     # 2. Delete S3 buckets by prefix
@@ -72,6 +77,8 @@ def delete_resources(username, region):
                 empty_and_delete_s3(s3_client, name, retry_delete)
     except Exception as e:
         logger.error(f"Failed to list S3 buckets: {e}")
+
+    delete_ec2_amis_and_snapshots(ec2_client, username, retry_delete)
 
 def empty_and_delete_s3(client, bucket_name, retry_func):
     def empty_bucket():
@@ -110,6 +117,122 @@ def delete_ec2_key_pairs(client, username, retry_func):
     for key_name in sorted(key_names):
         logger.info(f"Deleting EC2 Key Pair '{key_name}'...")
         retry_func(client.delete_key_pair, KeyName=key_name)
+
+def _collect_user_ec2_ids(client, username):
+    instance_ids = set()
+    volume_ids = set()
+
+    try:
+        paginator = client.get_paginator('describe_instances')
+        for page in paginator.paginate(
+            Filters=[{'Name': 'tag:owner', 'Values': [username]}],
+        ):
+            for reservation in page.get('Reservations', []):
+                for instance in reservation.get('Instances', []):
+                    instance_id = instance.get('InstanceId')
+                    if instance_id:
+                        instance_ids.add(instance_id)
+                    for mapping in instance.get('BlockDeviceMappings', []):
+                        volume_id = mapping.get('Ebs', {}).get('VolumeId')
+                        if volume_id:
+                            volume_ids.add(volume_id)
+    except Exception as e:
+        logger.warning(f"Failed to list EC2 instances for owner '{username}': {e}")
+
+    try:
+        paginator = client.get_paginator('describe_volumes')
+        for page in paginator.paginate(
+            Filters=[{'Name': 'tag:owner', 'Values': [username]}],
+        ):
+            for volume in page.get('Volumes', []):
+                volume_id = volume.get('VolumeId')
+                if volume_id:
+                    volume_ids.add(volume_id)
+    except Exception as e:
+        logger.warning(f"Failed to list EC2 volumes for owner '{username}': {e}")
+
+    return instance_ids, volume_ids
+
+def _snapshot_belongs_to_user(snapshot, username, instance_ids, volume_ids):
+    tags = {tag['Key']: tag['Value'] for tag in snapshot.get('Tags', [])}
+    if tags.get('owner') == username:
+        return True
+
+    volume_id = snapshot.get('VolumeId')
+    if volume_id and volume_id in volume_ids:
+        return True
+
+    description = snapshot.get('Description') or ''
+    for instance_id in instance_ids:
+        if instance_id in description:
+            return True
+
+    return False
+
+def _image_belongs_to_user(image, username, snapshot_ids):
+    tags = {tag['Key']: tag['Value'] for tag in image.get('Tags', [])}
+    if tags.get('owner') == username:
+        return True
+
+    for mapping in image.get('BlockDeviceMappings', []):
+        snapshot_id = mapping.get('Ebs', {}).get('SnapshotId')
+        if snapshot_id and snapshot_id in snapshot_ids:
+            return True
+
+    return False
+
+def _snapshot_ids_from_image(image):
+    snapshot_ids = set()
+    for mapping in image.get('BlockDeviceMappings', []):
+        snapshot_id = mapping.get('Ebs', {}).get('SnapshotId')
+        if snapshot_id:
+            snapshot_ids.add(snapshot_id)
+    return snapshot_ids
+
+def delete_ec2_amis_and_snapshots(client, username, retry_func):
+    logger.info(f"Searching for EC2 AMIs and snapshots owned by '{username}'...")
+
+    instance_ids, volume_ids = _collect_user_ec2_ids(client, username)
+    ami_ids = set()
+    snapshot_ids = set()
+    images = []
+
+    try:
+        paginator = client.get_paginator('describe_snapshots')
+        for page in paginator.paginate(OwnerIds=['self']):
+            for snapshot in page.get('Snapshots', []):
+                if _snapshot_belongs_to_user(snapshot, username, instance_ids, volume_ids):
+                    snapshot_id = snapshot.get('SnapshotId')
+                    if snapshot_id:
+                        snapshot_ids.add(snapshot_id)
+    except Exception as e:
+        logger.warning(f"Failed to list EC2 snapshots for owner '{username}': {e}")
+
+    try:
+        paginator = client.get_paginator('describe_images')
+        for page in paginator.paginate(Owners=['self']):
+            images.extend(page.get('Images', []))
+    except Exception as e:
+        logger.warning(f"Failed to list EC2 AMIs for owner '{username}': {e}")
+
+    for image in images:
+        if _image_belongs_to_user(image, username, snapshot_ids):
+            image_id = image.get('ImageId')
+            if image_id:
+                ami_ids.add(image_id)
+                snapshot_ids.update(_snapshot_ids_from_image(image))
+
+    if not ami_ids and not snapshot_ids:
+        logger.info(f"No EC2 AMIs or snapshots found for owner '{username}'.")
+        return
+
+    for image_id in sorted(ami_ids):
+        logger.info(f"Deregistering EC2 AMI '{image_id}'...")
+        retry_func(client.deregister_image, ImageId=image_id)
+
+    for snapshot_id in sorted(snapshot_ids):
+        logger.info(f"Deleting EC2 snapshot '{snapshot_id}'...")
+        retry_func(client.delete_snapshot, SnapshotId=snapshot_id)
 
 if __name__ == "__main__":
     if len(sys.argv) < 3:
