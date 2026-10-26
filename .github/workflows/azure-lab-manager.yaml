@@ -105,6 +105,12 @@ jobs:
             -var='tenant_id=${{ secrets.AZURE_TENANT_ID }}' \
             -var='subscription_id=${{ secrets.AZURE_SUBSCRIPTION_ID }}'
 
+      - name: Purge previous Entra user
+        if: github.event.inputs.action == 'apply'
+        env:
+          STUDENT_USERNAME: ${{ github.event.inputs.student_username }}
+        run: bash azure/scripts/purge-deleted-entra-user.sh "$STUDENT_USERNAME"
+
       - name: Terraform Apply
         id: apply
         working-directory: ${{ github.workspace }}/azure/labs/${{ github.event.inputs.lab }}
@@ -117,13 +123,28 @@ jobs:
           ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
           TERRAFORM_VERSION: ${{ env.TERRAFORM_VERSION }}
         run: |
-          # Apply Terraform configuration
-          terraform apply -auto-approve \
+          replace_args=()
+          if terraform state list | grep -qx 'module.USER.azuread_user.user'; then
+            echo "Replacing existing Entra user so a previous Authenticator registration is not reused."
+            replace_args+=(-replace=module.USER.azuread_user.user)
+            echo "replaced=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "replaced=false" >> "$GITHUB_OUTPUT"
+          fi
+
+          terraform apply -auto-approve "${replace_args[@]}" \
             -var='tenant_id=${{ secrets.AZURE_TENANT_ID }}' \
             -var='subscription_id=${{ secrets.AZURE_SUBSCRIPTION_ID }}' \
             -var='student_username=${{ github.event.inputs.student_username }}' \
             -var='student_password=${{ github.event.inputs.student_password }}' \
             -var='location=${{ vars.AZURE_REGION }}'
+
+      - name: Permanently delete replaced Entra user
+        if: always() && github.event.inputs.action == 'apply' && steps.apply.outputs.replaced == 'true'
+        continue-on-error: true
+        env:
+          STUDENT_USERNAME: ${{ github.event.inputs.student_username }}
+        run: bash azure/scripts/purge-deleted-entra-user.sh "$STUDENT_USERNAME" --wait
 
       - name: Set lab status output
         id: status
@@ -193,6 +214,12 @@ jobs:
               -var='student_username=${{ github.event.inputs.student_username }}' \
               -var='student_password=${{ github.event.inputs.student_password }}' \
               -var='location=${{ vars.AZURE_REGION }}'
+
+      - name: Permanently delete Entra user
+        if: always() && github.event.inputs.action == 'destroy' && steps.destroy.outcome != 'skipped'
+        env:
+          STUDENT_USERNAME: ${{ github.event.inputs.student_username }}
+        run: bash azure/scripts/purge-deleted-entra-user.sh "$STUDENT_USERNAME" --wait
 
   notify-backend:
     name: Notify backend when lab is ready
