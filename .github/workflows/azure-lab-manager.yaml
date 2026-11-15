@@ -167,11 +167,16 @@ jobs:
           inlineScript: |
             rg="${{ github.event.inputs.student_username }}"
 
+            if [ "$(az group exists --name "$rg" --output tsv)" != "true" ]; then
+              echo "Resource group '$rg' does not exist. Skipping cleanup."
+              exit 0
+            fi
+
             echo "Deleting all VMs in $rg..."
             vms=$(az vm list -g "$rg"  --query "[].name" -o tsv)
             for vm in $vms; do
               echo "Deleting VM: $vm"
-              az vm delete -g "$rg" -n "$vm" --yes 
+              az vm delete -g "$rg" -n "$vm" --yes
             done
 
             echo "Deleting all NICs in $rg..."
