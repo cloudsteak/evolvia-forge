@@ -33,6 +33,7 @@ module "AI" {
   location                 = var.location
   resource_group_name      = azurerm_resource_group.rg.name
   rag_storage_account_name = module.STORAGE.storage_account_name
+  student_principal_id     = module.USER.object_id
   is_rag_files             = true
   tags                     = local.tags
 }

@@ -6,7 +6,12 @@ resource "random_string" "this" {
 }
 
 locals {
-  deployment_data = jsondecode(file("../../files/openai_deployments.json"))
+  deployment_data      = jsondecode(file("../../files/openai_deployments.json"))
+  foundry_user_role_id = "53ca6127-db72-4b80-b1b0-d745d6d5456d"
+}
+
+data "azurerm_role_definition" "foundry_user" {
+  role_definition_id = local.foundry_user_role_id
 }
 
 # Microsoft Foundry account. A project is required for the current Foundry portal.
@@ -36,6 +41,12 @@ resource "azurerm_cognitive_account_project" "this" {
   identity {
     type = "SystemAssigned"
   }
+}
+
+resource "azurerm_role_assignment" "student_foundry_user" {
+  scope              = azurerm_cognitive_account.this.id
+  role_definition_id = data.azurerm_role_definition.foundry_user.id
+  principal_id       = var.student_principal_id
 }
 
 resource "azurerm_cognitive_deployment" "this" {
