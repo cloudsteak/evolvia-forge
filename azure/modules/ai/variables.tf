@@ -58,3 +58,8 @@ variable "rag_storage_account_name" {
   description = "value of the Azure storage account suffix for RAG"
   default     = "fake"
 }
+
+variable "student_principal_id" {
+  type        = string
+  description = "Entra object ID of the lab user. Foundry User is assigned on this lab's Foundry account."
+}
