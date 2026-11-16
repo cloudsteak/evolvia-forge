@@ -13,14 +13,14 @@
     "model_name": "gpt-5.6-luna",
     "model_version": "2026-07-09",
     "scale_type": "GlobalStandard",
-    "capacity": 100
+    "capacity": 75
   },
   "embedding_model": {
     "name": "text-embedding-ada-002",
     "model_format": "OpenAI",
     "model_name": "text-embedding-ada-002",
     "model_version": "2",
-    "scale_type": "Standard",
-    "capacity": 350
+    "scale_type": "GlobalStandard",
+    "capacity": 150
   }
 }
