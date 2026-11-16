@@ -4,7 +4,7 @@
     "model_format": "OpenAI",
     "model_name": "gpt-5.4-mini",
     "model_version": "2026-03-17",
-    "scale_type": "Standard",
+    "scale_type": "GlobalStandard",
     "capacity": 250
   },
   "chat_model-56-luna": {
@@ -12,7 +12,7 @@
     "model_format": "OpenAI",
     "model_name": "gpt-5.6-luna",
     "model_version": "2026-07-09",
-    "scale_type": "Standard",
+    "scale_type": "GlobalStandard",
     "capacity": 100
   },
   "embedding_model": {
