@@ -1,175 +1,129 @@
 # Alap AI példa Azure-ban
 
-Manapság a Mesterséges Intelligencia az egyik legfelkapottabb témakör. Emellett minden felhőszolgáltató igyekszik a saját AI szolgáltatásait minél jobban népszerűsíteni. Az Azure is ezen cégek közé tartozik, így én is úgy gondoltam, hogy érdemes lenne egy kis bevezetőt írni az Azure AI szolgáltatásairól.
+A mesterséges intelligencia továbbra is az egyik leggyakrabban kért téma a felhőben. 2026 októberére az Azure-os belépő már nem az Azure OpenAI Studio, hanem a Microsoft Foundry. Ez az útmutató azt a állapotot írja le: a portált, a modelleket, és azt, hogyan lehet a saját dokumentumainkra válaszoló csevegést összerakni.
 
-## Azure AI
+## Azure AI 2026 októberében
 
-Az Azure AI egy olyan felhőalapú szolgáltatás, amely lehetővé teszi a fejlesztők számára, hogy könnyedén integrálják az AI-t a saját alkalmazásaikba. Az Azure AI szolgáltatások között megtalálhatóak a következők:
+A fejlesztői felület a [Microsoft Foundry](https://ai.azure.com/). A korábbi nevek (Azure OpenAI Studio, Azure AI Studio, Azure AI Foundry) ugyanerre a platformra vonatkoznak. A portál tetején a **New Foundry** kapcsolóval az új felületet használd. A modellhívás tokenenként számlázott, a portál megnyitása önmagában nem ingyenes.
 
-- Azure Cognitive Services
-- Azure Machine Learning
-- Azure Bot Service
-- Azure Databricks
-- Azure OpenAI
-- Azure OpenAI Studio
+Amit ezen a képzésen használunk:
 
-Ezen szolgáltatások segítségével a fejlesztők képesek lehetnek például beszéd- és képfelismerésre, valamint gépi tanulásra alapozott alkalmazásokat készíteni.
+- **Microsoft Foundry** a modellek telepítésére és a játszótérre. A háttérerőforrás típusa továbbra is `Microsoft.CognitiveServices/accounts`. A portálon ez Foundry-erőforrás és projekt. A régebbi, külön Azure OpenAI-fiók ugyanebbe a típusba tartozik, és átvihető Foundry-erőforrásra.
+- **Foundry Tools** a kész AI-képességek. Ez a vonal volt korábban az Azure Cognitive Services, majd az Azure AI Services. Ide tartozik a Speech, a Translator, a Language, a Vision, a Document Intelligence, a Content Understanding és a Content Safety. A Decision és a Web Search kategória már nincs a kínálatban. Az Anomaly Detector, a Personalizer, a Content Moderator, a LUIS és a QnA Maker kivezetett szolgáltatás.
+- **Azure AI Search**, a portálon Foundry IQ néven is. Ez adja a saját dokumentumok indexelését és a tudásbázist.
+- **Azure Machine Learning** és **Azure Databricks** külön adat- és modellplatform. Új csevegőalkalmazást a Foundry Agent Service-ben érdemes kezdeni. Az Assistants API 2026. augusztus 26-án megszűnt.
 
-Mi jelenleg az Azure OpenAI-t fogjuk megvizsgálni. Ez az amivel a leggyorsabban és legkönnyebben lehet elkezdeni.
+A képzés két chat modellt telepít, mindkettő Global standard típusban:
 
-## Azure Cognitive Services
+- `gpt-5.4-mini`, verzió `2026-03-17`. Rövidebb, olcsóbb csevegéshez. A kontextusablak 400 000 token.
+- `gpt-5.6-luna`, verzió `2026-07-09`. Nagyobb következtető modell, 1 050 000 tokenes ablakkal.
 
-Az Azure Cognitive Services egy olyan felhőalapú szolgáltatás, amely lehetővé teszi a fejlesztők számára, hogy könnyedén integrálják az AI-t a saját alkalmazásaikba. Az Azure Cognitive Services szolgáltatások között megtalálhatóak a következők:
-
-- Vision
-- Speech
-- Language
-- Decision
-- Web Search
-
-Ezen szolgáltatások segítségével a fejlesztők képesek lehetnek például beszéd- és képfelismerésre, valamint gépi tanulásra alapozott alkalmazásokat készíteni.
+A katalógusban 2026 októberére a GPT-5.5, a GPT-5.6 (`sol`, `terra`, `luna`) és a GPT-6 vonal is elérhető. Ezen a képzésen a fenti két deploymenttel dolgozunk. Beágyazáshoz a `text-embedding-3-large` az aktuális javasolt modell. A `text-embedding-ada-002` még telepíthető, de egy meglévő index beágyazását nem lehet modellváltással átrakni: új vektorokat kell képezni.
 
 ## Hogyan kezdjük el?
 
-Azure-ban a legegyszerűbb eszközünk, ahol el tudjuk kezdeni, az [Azure OpenAI Studio](https://oai.azure.com/).
-
-Itt egy egyszerű regisztrációt követően már el is kezdhetjük az AI modellek fejlesztését. Az Azure OpenAI Studio egy teljesen ingyenes eszköz, amely lehetővé teszi a fejlesztők számára, hogy könnyedén készítsenek és teszteljenek AI modelleket.
-
-Itt találjuk a különböző modelleket, amelyeket az Azure Cognitive Services nyújt. Az egyes modellek használatához csak egy kattintásra van szükség, és már használhatjuk is azokat.
-
-Ahhoz, hogy ezeket a modelleket használni tudjiuk, létre kell hoznunk egy Deployment-et. Ezt a Deployment-et aztán egy API-n keresztül tudjuk elérni, és használni a kiválasztott modelleket.
+Nyisd meg a [Microsoft Foundry](https://ai.azure.com/) portált, és kapcsold be a **New Foundry** nézetet. A modell csak akkor hívható, ha készült hozzá deployment. A deployment neve az, amit a kérés `model` mezőjében megadsz.
 
 ### Deployment létrehozása
 
-1. Az Azure OpenAI Studio-ban kattintsunk a Deployment menüpontra.
-2. Kattintsunk a **Create new deployment** gombra.
-3. Válasszuk ki a kívánt modelt.
-4. Adjunk neki egy nevet.
-5. Állítsuk be az egyéb paramétereket.
-6. Kattintsunk a **Create** gombra.
+1. A Foundry portálon menj a **Build > Catalog > Model Catalog** oldalra.
+2. Válaszd a `gpt-5.4-mini` modellt. A nagyobb feladatokhoz ismételd meg a lépéseket a `gpt-5.6-luna` modellel.
+3. **Deploy > Default settings**, ha az alapértelmezett név és a Global standard megfelel. Egyedi névhez a **Deploy > Custom settings** való.
+4. Az Azure által árult modelleknél, így ezeknél a GPT-knél, nincs Marketplace-előfizetés. Partner modellnél (például Llama) a feltételeket el kell fogadni.
+5. A sikeres deployment után a játszótér nyílik meg. A listát a **Build > Models** alatt látod. A státusz **Succeeded** legyen.
 
-![Deployment létrehozása](./images/deploy-model.png)
-
-![Minden Deployment](./images/all-deployment.png)
+A projektnek és az erőforrásnak olyan régióban kell lennie, ahol a modell Global standard típusa elérhető.
 
 ### Chat játszótér
 
-Ha van egy Deploymentünk, akkor már használhatjuk is az adott modelt. Az Azure OpenAI Studio-ban található egy Chat játszótér, ahol kipróbálhatjuk az adott modelleket.
+1. **Build > Models**, majd a deployment.
+2. Írd be a kérdést a játszótérbe.
+3. A **Code** fülön látszik az endpoint és a hívás mintája. A Responses API az aktuális felület. A Chat Completions API ezeknél a modelleknél még elérhető.
 
-Ez így használhatjuk:
+A rendszerpromptot, a temperature értéket és az eszközöket (webes keresés, fájlkeresés, kódinterpreter) ugyanitt lehet állítani. Ez a játszótér a modellt magát próbálja ki. A saját dokumentumok bekötése külön lépés, és 2026. október 14. óta már nem az „Add your data” gomb.
 
-1. Az Azure OpenAI Studio-ban kattintsunk a Chat menüpontra.
-2. Jobb oldalon, a **Configuration** részben válasszuk ki a Deploymentet.
-3. A képernyő közepén lévő chat ablakban írjuk be a kérdéseinket.
+## Saját adatforrás
 
-![Chat játszótér](./images/chat-playground.png)
+Az **Azure OpenAI On Your Data** 2026. október 14-én kivezetésre került. A Chat játszótérben az **Add your data**, a Blob-ból automatikusan indexelő varázsló és a `data_sources` mezős chat hívás erre a kivezetett rétegre mutatott. Új munkához ne ezt keresd.
 
-## Saját adatforrás használata
+A helyette használt réteg a **Foundry IQ**. Az adat az Azure AI Search indexében marad. Egy knowledge source mutat az indexre vagy közvetlenül a Blob-tárolóra, egy knowledge base pedig ehhez köti a chat modellt. A portálos varázsló a `2026-08-01-preview` API-t használja. A válaszösszeállítás (answer synthesis) és a lekérdezéstervezés ebben a felületben előnézet. Az éles, GA út a `2026-04-01` API, ami kivonatokat ad vissza, a mondatba szedett választ pedig az alkalmazás írja meg. A képzési gyakorlatban a portálos út elég.
 
-Az Azure Cognitive Services lehetőséget ad arra, hogy saját adatforrásokat is használjunk. Ehhez az Azure OpenAI Studio-ban a **Data** menüpontra kell kattintanunk, és ott tudjuk hozzáadni a saját adatforrásainkat. Ez azért lehet nekünk hasznos, mivel ez esetben nem kell 100%-ban az AI által talált adatokra hagyatkoznunk, illetve egyéb előnyei is vannak:
+A saját anyagon dolgozó válasz ettől még ugyanazt tudja, amit korábban vártunk tőle: a feltöltött dokumentumokból indul, és a találatokat hivatkozásként visszaadja. A hallucináció ettől nem tűnik el, csak szűkül az a halmaz, amiből a modell dolgozik.
 
-- Az AI a mi adatainkon dolgozik, így nem kell aggódnunk a biztonság miatt.
-- Az AI a mi adatainkon dolgozik. (Ez lehet a saját dokumentációnk, vagy akár a saját képeink.)
-- Csökkenthetjük az AI-ra jellemző hallucinációt.
-- Az AI válaszai a mi adatainkon alapulnak, így pontosabbak lehetnek.
+A tudásbázis két helyen fogyaszt tokent: az Azure AI Search az agentic retrieval miatt, a chat modell a tervezés és a válasz miatt.
 
-Ez lehet akár md fájl is, ami a kódunk, alkalmazásunk dokumentációját tartalmazza. Az AI így könnyedén válaszolhat a felhasználó kérdéseire.
+### 1. Foundry-erőforrás
 
-## Példa Azure OpenAI használatára
+1. Lépj be az [Azure Portalra](https://portal.azure.com/).
+2. **Erőforrás létrehozása**.
+3. Keress a **Microsoft Foundry** szolgáltatásra. Ha a találat még Azure OpenAI néven jön fel, az ugyanaz a `Microsoft.CognitiveServices/accounts` típus.
+4. **Létrehozás**.
+5. Töltsd ki a mezőket. Tarifacsomag: **Standard S0**. A projekt a Foundry-erőforrással együtt jön létre.
+6. **Felülvizsgálat és létrehozás**, majd **Létrehozás**.
+7. A [Foundry portálon](https://ai.azure.com/) telepítsd a `gpt-5.4-mini` vagy a `gpt-5.6-luna` deploymentet, és egy beágyazó modellt. Új indexhez a `text-embedding-3-large` a javasolt. A képzés meglévő `text-embedding-ada-002` deploymentje csak akkor jó, ha az indexet is ezzel építed.
 
-Az alábbi példában egy egyszerű chatbotot fogunk készíteni, amely képes válaszolni a felhasználó kérdéseire. 
+### 2. Azure tárfiók
 
-Ehhez az alábbi erőforrások szükségesek:
+1. Az Azure Portalon: **Erőforrás létrehozása**.
+2. **Tárolás**, majd **Tárfiók**.
+3. **Létrehozás**.
+4. Redundancia: **LRS**. A régió legyen azonos a keresőszolgáltatással.
+5. **Felülvizsgálat és létrehozás**, majd **Létrehozás**.
+6. Nyisd meg a tárfiókot, **Adattárolás > Tárolók**.
+7. Új tároló.
+   - Név: `ai-forras`
+   - Névtelen hozzáférés: privát
+8. Töltsd fel a dokumentumokat, amelyekből a válaszoknak kell jönniük. Markdown is megfelelő, a képzés segédanyagai ilyenek.
 
-- Azure OpenAI
-- Azure tárfiók (Azure Storage account)
-- Azure AI keresőszolgáltatás (Azure AI Search)
+A keresőszolgáltatás felügyelt identitásának **Storage Blob Data Contributor** joga kell ezen a tárfiókon. A saját felhasználódnak is kell blobolvasási jog, ha a portál a bejelentkezett fiókkal listázza a fájlokat.
 
-### 1. Azure OpenAI létrehozása
+### 3. Azure AI Search
 
-1. Lépjünk be az Azure Portalba.
-2. Kattintsunk a **Erőforrás létrehozása** gombra.
-3. Keressük ráa az **Azure OpenAI** lehetőségre.
-4. Kattintsunk a **Létrehozás** gombra.
-5. Töltsük ki a szükséges mezőket.
-   - Tarifacsomag: Standard S0
-6. A **Felülvizsgálat és létrehozás** oldalon kattintsunk a **Létrehozás** gombra kattintva hozzuk létre az erőforrást.
+1. Az Azure Portalon: **Erőforrás létrehozása**.
+2. Keress az **Azure AI Search** szolgáltatásra.
+3. **Létrehozás**.
+4. Töltsd ki a mezőket.
+   - Név: `mentor-ai-search`
+   - A hely egyezzen a tárfiókéval, és támogassa az agentic retrievalt.
+   - Tarifacsomag: **Basic**
+5. A Basic díja keresőegységenként óránként számolódik. Az USA keleti régió publikus ára 2026 novemberében 0,101 USD óránként, egy egységgel ez nagyjából havi 74 USD. A forintösszeg az árfolyamtól függ. A szolgáltatás akkor is fizet, ha nem kérdezel. A gyakorlat végén töröld.
+6. A Foundry IQ tudásbázisához Basic vagy magasabb kell, mert a felügyelt identitás a Free szinten nem elérhető.
+7. **Felülvizsgálat és létrehozás**, majd **Létrehozás**.
+8. A keresőn kapcsold be a szerepkör-alapú hozzáférést, és hozz létre rendszer által hozzárendelt felügyelt identitást. A saját felhasználód kapja meg a **Search Service Contributor**, a **Search Index Data Contributor** és a **Search Index Data Reader** szerepet. A Foundry-erőforráson a kereső identitása kapja meg a **Cognitive Services User** szerepet.
 
-### 2. Azure tárfiók létrehozása
+### 4. Tudásbázis a saját dokumentumokhoz
 
-1. Lépjünk be az Azure Portalba.
-2. Kattintsunk a **Erőforrás létrehozása** gombra.
-3. Keressük meg az **Tárolás** kategóriát.
-4. Válasszuk ki a **Tárfiók** lehetőséget.
-5. Kattintsunk a **Létrehozás** gombra.
-6. Töltsük ki a szükséges mezőket.
-   - Redundancia: LRS
-7. A **Felülvizsgálat és létrehozás** oldalon kattintsunk a **Létrehozás** gombra kattintva hozzuk létre az erőforrást.
-8. Nyissuk meg a tárfiókunkat, és kattintsunk a **Tárolók** menüpontra.
-9. Hozzunk létre egy új tárolót.
-   - Név: ai-forras
-   - Névtelen hozzáférés: Privát
-10. Kattintsunk az `ai-forras` tárolóra, majd töltsük fel a jsonl fájlt, amelyet az AI szolgáltatásunknak szeretnénk használni, mint adatforrás.
+Ezt a keresőszolgáltatás oldalán, az **Agentic retrieval** menüben rakod össze. A Foundry **Build > Knowledge** oldala ugyanezt a Foundry IQ réteget nyitja. A portálos Knowledge felület 2026 októberében még előnézet, az API GA része a `2026-04-01`.
 
-### 3. Azure AI keresőszolgáltatás létrehozása
+1. A `mentor-ai-search` erőforráson: **Agentic retrieval > Knowledge sources**.
+2. **Add knowledge source**, majd **Azure blob (Indexed)**.
+3. Név: `ai-forras-ks`. Válaszd ki az előfizetést, a tárfiókot és az `ai-forras` tárolót.
+4. Hitelesítés: felügyelt identitás, rendszer által hozzárendelt.
+5. **Enable text vectorization > Add vectorizer**. Kind: **Microsoft Foundry**. Válaszd ki a projektet és a beágyazó deploymentet. Hitelesítés: rendszer által hozzárendelt identitás.
+6. Mentsd a vectorizert, majd hozd létre a knowledge source-t. A portál ettől létrehozza az adatforrást, a skillsetet, az indexet és az indexert.
+7. **Agentic retrieval > Knowledge bases > Add knowledge base**.
+8. Név: `ai-forras-kb`.
+9. **Chat completion model > Add model deployment**. Kind: **Microsoft Foundry**, majd a `gpt-5.4-mini` vagy a `gpt-5.6-luna` deployment. Ha a varázsló ezeket nem kínálja fel, a listában szereplő chat modellt telepítsd a tudásbázishoz. A játszótéri beszélgetéshez a képzés modelljei ettől még megmaradnak. A portál dokumentált listája szűkebb tud lenni, mint a katalógus.
+10. Knowledge source: `ai-forras-ks`. Hozd létre a tudásbázist.
+11. A tudásbázis chat mezőjében kérdezz rá egy olyan tényre, ami a feltöltött fájlban van. A válasz mellett a forrás hivatkozása is jelenjen meg.
+12. **Search management** alatt nézd meg, hogy az indexer hibátlanul lefutott-e. Új fájlnál töltsd fel a blobot, majd futtasd újra az indexert.
 
-1. Lépjünk be az Azure Portalba.
-2. Kattintsunk a **Erőforrás létrehozása** gombra.
-3. Keressünk rá a **Azure AI Search** lehetőségre.
-4. Kattints a **Létrehozás** gombra.
-5. Töltsük ki a szükséges mezőket.
-   - Név: mentor-ai-search
-   - Hely legyen ugyanaz, mint a tárfiókunknak
-   - Tarifacsomag: B (Alap)
-6. Megjegyzés: Az AI Search ezen tarifa csomagja nagyjából **havi 27 000 Forint**ba kerül. (Ezért csak akkor érdemes használni, ha valóban szükségünk van rá.)
-7. A **Felülvizsgálat és létrehozás** oldalon kattintsunk a **Létrehozás** gombra kattintva hozzuk létre az erőforrást.
+### 5. Webalkalmazás
 
+A Chat játszótér **Deploy to a web app** gombja a Foundry classic felülethez tartozik, és a kivezetett On Your Data bekötésre épült. Az új Foundry nézetben ez a gomb nem a saját dokumentumos közzététel útja.
 
-### 4. Saját adatforrás használata Chatbothoz Azure OpenAI Studio-ban
+Az új felületen a webes csevegő egy agent. **Build > Agents** alatt létrehozod az agentet, hozzáadod a Foundry IQ tudásbázist, majd verziót készítesz belőle. A webalkalmazás közzététele ehhez a verzióhoz kötődik. A Copilotba és a Teamsbe publikálás 2026 októberében általánosan elérhető. A klasszikus, B1-es App Service-re pakoló űrlap (név, előfizetés, erőforráscsoport, régió, chat history) csak a classic portálon, saját adat nélkül használható biztosan.
 
-1. Lépjünk be az Azure OpenAI Studio-ba.
-2. Kattintsunk a **Chat** menüpontra.
-3. A jobb oldalon, a **Configuration** részben válasszuk ki a Deploymentet.
-4. A bal olalon, a **Setup** részben válasszuk ki a **Data** lehetőséget.
-5. Töröljük ki a **Prompt** alatt lévő összes elemet.
-6. Menjünk át az **Add your data** fülre.
-7. Kattintsunk az **Add a data source** gombra.
-8. Select a data source: **Azure Blob Storage**
-9. Blob storage account: Válasszuk ki az előbb létrehozott tárfiókunkat.
-10. Container: Válasszuk ki az `ai-forras` tárolót.
-11. Azure AI Search-nél válasszuk ki a **mentor-ai-search**-t.
-12. Enter the inxed name: dokumentum
-13. Indexer schedule: hourly
-14. Kattintsunk a **Next** gombra.
-15. Kattintsunk a **Next** gombra.
-16. Összegző képernyőn kattintsunk a **Save and close** gombra.
-17. Pár perc múlva az adatforrásunk elérhető lesz a Chatben.
+A képzés ellenőrzése a tudásbázis chatje és a modell játszótér. Webes közzétételnél az App Service a választott csomag szerint fizet. Ha a kész app Microsoft-bejelentkezést kér, az a bérlőre korlátozott hitelesítés. **Accept** után lehet beszélgetni.
 
+### 6. Példa kérdések
 
-### 5. Webalkalmazás létrehozása Chatbothoz Azure-ban
+Ezek a feltöltött képzési segédanyagokra kérdeznek rá:
 
-1. Az előző pontban létrehozott Chat játszótérben kattintsunk a **Deploy to** gombra.
-2. Válasszuk a **Create a new web app** lehetőséget.
-3. Töltsük ki a szükséges mezőket.
-   - Name: mentor-chatbot
-   - Subscription: Válasszuk ki a megfelelő előfizetésünket.
-   - Resource group: Válasszuk ki a megfelelő erőforrás csoportunkat.
-   - Location: Válasszuk ki a megfelelő régiót.
-   - Pricing plan: B1
-   - Enable chat history in the web app: Igen
-4. Kattintsunk a **deploy** gombra.
-5. Ha elkészült, nyissuk meg.
-6. Emngedélyezzük a hozzásférést a **Permissions requested** ablakban at **Accept** gombra kattintva,
-7. Kezdjünk el beszélgetni az AI-val.
-
-![AI Chat Webapp](./images/ai-chat-webapp.png)
-
-### 6. Példa kérdések 'prompt'
-
-1. Ma már minden a mesterséges intelligenciáról (AI) szól: Mit jelent ez számunkra?
-2. Hogyanm telepítek NodeJs 20-at Linuxra?
-3. Hogyan telepítek Python3-at Windowsra?
-4. Mi a Webhook alkalmazási területei?
+1. Ma már minden a mesterséges intelligenciáról (AI) szól: mit jelent ez számunkra?
+2. Hogyan telepítek Node.js 24-et Linuxra, és miért a 24.22.1 a minimum a 2026. októberi javítás óta?
+3. Hogyan telepítek Python 3-at Windowsra?
+4. Mik a webhook alkalmazási területei?
 5. Hogyan néz ki egy Cloud Administrator első napja?
 6. Milyen segédanyagokat találok az Azure témájú képzésekhez?
-7. Hogyan tudok kapcsolatot létesíteni az Azure Pipeline és a GitHub között?
+7. Hogyan kapcsolom össze az Azure Pipeline-t a GitHubbal?
