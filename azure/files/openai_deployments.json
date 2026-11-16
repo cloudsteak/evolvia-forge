@@ -5,7 +5,7 @@
     "model_name": "gpt-5.4-mini",
     "model_version": "2026-03-17",
     "scale_type": "Standard",
-    "capacity": 500
+    "capacity": 250
   },
   "chat_model-56-luna": {
     "name": "gpt-5.6-luna",
