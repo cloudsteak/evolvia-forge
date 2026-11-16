@@ -56,5 +56,5 @@ variable "local_doc_directory_path" {
 variable "rag_storage_account_name" {
   type        = string
   description = "value of the Azure storage account suffix for RAG"
-  default = "fake"
+  default     = "fake"
 }
