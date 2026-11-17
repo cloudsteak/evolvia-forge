@@ -8,7 +8,10 @@ resource "random_string" "this" {
 locals {
   deployment_data      = jsondecode(file("../../files/openai_deployments.json"))
   foundry_user_role_id = "53ca6127-db72-4b80-b1b0-d745d6d5456d"
+  doc_directory        = abspath("${path.module}/../../files/docs")
 }
+
+data "azurerm_client_config" "current" {}
 
 data "azurerm_role_definition" "foundry_user" {
   role_definition_id = local.foundry_user_role_id
@@ -47,6 +50,32 @@ resource "azurerm_role_assignment" "student_foundry_user" {
   scope              = azurerm_cognitive_account.this.id
   role_definition_id = data.azurerm_role_definition.foundry_user.id
   principal_id       = var.student_principal_id
+}
+
+resource "azurerm_role_assignment" "deployer_foundry_user" {
+  scope                            = azurerm_cognitive_account.this.id
+  role_definition_id               = data.azurerm_role_definition.foundry_user.id
+  principal_id                     = data.azurerm_client_config.current.object_id
+  skip_service_principal_aad_check = true
+}
+
+resource "terraform_data" "project_files" {
+  depends_on = [azurerm_role_assignment.deployer_foundry_user]
+
+  triggers_replace = {
+    endpoint = "https://${azurerm_cognitive_account.this.custom_subdomain_name}.services.ai.azure.com/api/projects/${azurerm_cognitive_account_project.this.name}/openai/v1/files"
+    docs = sha256(join("", [
+      for name in sort(fileset(local.doc_directory, "*")) : filesha256("${local.doc_directory}/${name}")
+    ]))
+  }
+
+  provisioner "local-exec" {
+    command = "bash ${path.module}/upload-docs.sh"
+    environment = {
+      DOC_DIR                = local.doc_directory
+      PROJECT_FILES_ENDPOINT = "https://${azurerm_cognitive_account.this.custom_subdomain_name}.services.ai.azure.com/api/projects/${azurerm_cognitive_account_project.this.name}/openai/v1/files"
+    }
+  }
 }
 
 resource "azurerm_cognitive_deployment" "this" {
