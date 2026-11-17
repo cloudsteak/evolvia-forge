@@ -8,7 +8,10 @@ resource "random_string" "this" {
 locals {
   deployment_data      = jsondecode(file("../../files/openai_deployments.json"))
   foundry_user_role_id = "53ca6127-db72-4b80-b1b0-d745d6d5456d"
+  doc_directory        = abspath("${path.module}/../../files/docs")
 }
+
+data "azurerm_client_config" "current" {}
 
 data "azurerm_role_definition" "foundry_user" {
   role_definition_id = local.foundry_user_role_id
@@ -49,6 +52,32 @@ resource "azurerm_role_assignment" "student_foundry_user" {
   principal_id       = var.student_principal_id
 }
 
+resource "azurerm_role_assignment" "deployer_foundry_user" {
+  scope                            = azurerm_cognitive_account.this.id
+  role_definition_id               = data.azurerm_role_definition.foundry_user.id
+  principal_id                     = data.azurerm_client_config.current.object_id
+  skip_service_principal_aad_check = true
+}
+
+resource "terraform_data" "project_files" {
+  depends_on = [azurerm_role_assignment.deployer_foundry_user]
+
+  triggers_replace = {
+    endpoint = "https://${azurerm_cognitive_account.this.custom_subdomain_name}.services.ai.azure.com/api/projects/${azurerm_cognitive_account_project.this.name}/openai/v1/files"
+    docs = sha256(join("", [
+      for name in sort(fileset(local.doc_directory, "*")) : filesha256("${local.doc_directory}/${name}")
+    ]))
+  }
+
+  provisioner "local-exec" {
+    command = "bash ${path.module}/upload-docs.sh"
+    environment = {
+      DOC_DIR                = local.doc_directory
+      PROJECT_FILES_ENDPOINT = "https://${azurerm_cognitive_account.this.custom_subdomain_name}.services.ai.azure.com/api/projects/${azurerm_cognitive_account_project.this.name}/openai/v1/files"
+    }
+  }
+}
+
 resource "azurerm_cognitive_deployment" "this" {
   for_each             = local.deployment_data
   name                 = each.value.name
@@ -66,32 +95,4 @@ resource "azurerm_cognitive_deployment" "this" {
   }
 
   depends_on = [azurerm_cognitive_account_project.this]
-}
-
-resource "azurerm_search_service" "this" {
-  name                = "search-${random_string.this.result}"
-  resource_group_name = var.resource_group_name
-  location            = var.location
-  sku                 = "basic"
-
-  local_authentication_enabled = true
-  authentication_failure_mode  = "http403"
-}
-
-resource "azurerm_storage_container" "this" {
-  count                 = var.is_rag_files ? 1 : 0
-  name                  = var.doc_container_name
-  storage_account_name  = var.rag_storage_account_name
-  container_access_type = var.doc_container_access_type
-  depends_on            = [var.rag_storage_account_name]
-}
-
-resource "azurerm_storage_blob" "this" {
-  for_each               = var.is_rag_files ? fileset(var.local_doc_directory_path, "*.*") : []
-  name                   = each.value
-  storage_account_name   = var.rag_storage_account_name
-  storage_container_name = azurerm_storage_container.this[0].name
-  type                   = "Block"
-  source                 = "${var.local_doc_directory_path}/${each.value}"
-  depends_on             = [azurerm_storage_container.this]
 }

@@ -1,26 +1,18 @@
 {
-  "chat_model-54-mini": {
-    "name": "gpt-5.4-mini",
+  "chat_model": {
+    "name": "gpt-5-mini",
     "model_format": "OpenAI",
-    "model_name": "gpt-5.4-mini",
-    "model_version": "2026-03-17",
+    "model_name": "gpt-5-mini",
+    "model_version": "2025-08-07",
     "scale_type": "GlobalStandard",
-    "capacity": 375
-  },
-  "chat_model-56-luna": {
-    "name": "gpt-5.6-luna",
-    "model_format": "OpenAI",
-    "model_name": "gpt-5.6-luna",
-    "model_version": "2026-07-09",
-    "scale_type": "GlobalStandard",
-    "capacity": 75
+    "capacity": 250
   },
   "embedding_model": {
-    "name": "text-embedding-ada-002",
+    "name": "text-embedding-3-large",
     "model_format": "OpenAI",
-    "model_name": "text-embedding-ada-002",
-    "model_version": "2",
+    "model_name": "text-embedding-3-large",
+    "model_version": "1",
     "scale_type": "GlobalStandard",
-    "capacity": 150
+    "capacity": 120
   }
 }

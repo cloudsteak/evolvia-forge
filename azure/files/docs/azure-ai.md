@@ -13,12 +13,11 @@ Amit ezen a képzésen használunk:
 - **Azure AI Search**, a portálon Foundry IQ néven is. Ez adja a saját dokumentumok indexelését és a tudásbázist.
 - **Azure Machine Learning** és **Azure Databricks** külön adat- és modellplatform. Új csevegőalkalmazást a Foundry Agent Service-ben érdemes kezdeni. Az Assistants API 2026. augusztus 26-án megszűnt.
 
-A képzés két chat modellt telepít, mindkettő Global standard típusban:
+A képzés egy chat modellt telepít, Global standard típusban:
 
-- `gpt-5.4-mini`, verzió `2026-03-17`. Rövidebb, olcsóbb csevegéshez. A kontextusablak 400 000 token.
-- `gpt-5.6-luna`, verzió `2026-07-09`. Nagyobb következtető modell, 1 050 000 tokenes ablakkal.
+- `gpt-5-mini`, verzió `2025-08-07`. A gyakorló csevegéshez ez a modell van telepítve.
 
-A katalógusban 2026 októberére a GPT-5.5, a GPT-5.6 (`sol`, `terra`, `luna`) és a GPT-6 vonal is elérhető. Ezen a képzésen a fenti két deploymenttel dolgozunk. Beágyazáshoz a `text-embedding-3-large` az aktuális javasolt modell. A `text-embedding-ada-002` még telepíthető, de egy meglévő index beágyazását nem lehet modellváltással átrakni: új vektorokat kell képezni.
+A katalógusban 2026 októberére a GPT-5.5, a GPT-5.6 (`sol`, `terra`, `luna`) és a GPT-6 vonal is elérhető. Ezen a képzésen a `gpt-5-mini` és a `text-embedding-3-large` deploymenttel dolgozunk.
 
 ## Hogyan kezdjük el?
 
@@ -27,7 +26,7 @@ Nyisd meg a [Microsoft Foundry](https://ai.azure.com/) portált, és kapcsold be
 ### Deployment létrehozása
 
 1. A Foundry portálon menj a **Build > Catalog > Model Catalog** oldalra.
-2. Válaszd a `gpt-5.4-mini` modellt. A nagyobb feladatokhoz ismételd meg a lépéseket a `gpt-5.6-luna` modellel.
+2. Válaszd a `gpt-5-mini` modellt.
 3. **Deploy > Default settings**, ha az alapértelmezett név és a Global standard megfelel. Egyedi névhez a **Deploy > Custom settings** való.
 4. Az Azure által árult modelleknél, így ezeknél a GPT-knél, nincs Marketplace-előfizetés. Partner modellnél (például Llama) a feltételeket el kell fogadni.
 5. A sikeres deployment után a játszótér nyílik meg. A listát a **Build > Models** alatt látod. A státusz **Succeeded** legyen.
@@ -44,79 +43,20 @@ A rendszerpromptot, a temperature értéket és az eszközöket (webes keresés,
 
 ## Saját adatforrás
 
-Az **Azure OpenAI On Your Data** 2026. október 14-én kivezetésre került. A Chat játszótérben az **Add your data**, a Blob-ból automatikusan indexelő varázsló és a `data_sources` mezős chat hívás erre a kivezetett rétegre mutatott. Új munkához ne ezt keresd.
+A képzési fájlok a lab indulásakor felkerülnek a Foundry projektbe. Az **Adatok > Fájlok** alatt látod őket. Saját gépről nem kell feltölteni, és tárfiókot sem kell választani.
 
-A helyette használt réteg a **Foundry IQ**. Az adat az Azure AI Search indexében marad. Egy knowledge source mutat az indexre vagy közvetlenül a Blob-tárolóra, egy knowledge base pedig ehhez köti a chat modellt. A portálos varázsló a `2026-08-01-preview` API-t használja. A válaszösszeállítás (answer synthesis) és a lekérdezéstervezés ebben a felületben előnézet. Az éles, GA út a `2026-04-01` API, ami kivonatokat ad vissza, a mondatba szedett választ pedig az alkalmazás írja meg. A képzési gyakorlatban a portálos út elég.
+1. Nyisd meg a [Foundry portált](https://ai.azure.com/), és a **projekt** projektet.
+2. **Ügynökök**, majd hozz létre egy ügynököt a `gpt-5-mini` modellel.
+3. Adj hozzá **Fájlkeresés** eszközt, és válaszd ki a már bent lévő fájlokat.
+4. Kérdezz rá egy olyan tényre, ami a fájlban van. A válasz a feltöltött anyagból jöjjön.
 
-A saját anyagon dolgozó válasz ettől még ugyanazt tudja, amit korábban vártunk tőle: a feltöltött dokumentumokból indul, és a találatokat hivatkozásként visszaadja. A hallucináció ettől nem tűnik el, csak szűkül az a halmaz, amiből a modell dolgozik.
-
-A tudásbázis két helyen fogyaszt tokent: az Azure AI Search az agentic retrieval miatt, a chat modell a tervezés és a válasz miatt.
-
-### 1. Foundry-erőforrás
-
-1. Lépj be az [Azure Portalra](https://portal.azure.com/).
-2. **Erőforrás létrehozása**.
-3. Keress a **Microsoft Foundry** szolgáltatásra. Ha a találat még Azure OpenAI néven jön fel, az ugyanaz a `Microsoft.CognitiveServices/accounts` típus.
-4. **Létrehozás**.
-5. Töltsd ki a mezőket. Tarifacsomag: **Standard S0**. A projekt a Foundry-erőforrással együtt jön létre.
-6. **Felülvizsgálat és létrehozás**, majd **Létrehozás**.
-7. A [Foundry portálon](https://ai.azure.com/) telepítsd a `gpt-5.4-mini` vagy a `gpt-5.6-luna` deploymentet, és egy beágyazó modellt. Új indexhez a `text-embedding-3-large` a javasolt. A képzés meglévő `text-embedding-ada-002` deploymentje csak akkor jó, ha az indexet is ezzel építed.
-
-### 2. Azure tárfiók
-
-1. Az Azure Portalon: **Erőforrás létrehozása**.
-2. **Tárolás**, majd **Tárfiók**.
-3. **Létrehozás**.
-4. Redundancia: **LRS**. A régió legyen azonos a keresőszolgáltatással.
-5. **Felülvizsgálat és létrehozás**, majd **Létrehozás**.
-6. Nyisd meg a tárfiókot, **Adattárolás > Tárolók**.
-7. Új tároló.
-   - Név: `ai-forras`
-   - Névtelen hozzáférés: privát
-8. Töltsd fel a dokumentumokat, amelyekből a válaszoknak kell jönniük. Markdown is megfelelő, a képzés segédanyagai ilyenek.
-
-A keresőszolgáltatás felügyelt identitásának **Storage Blob Data Contributor** joga kell ezen a tárfiókon. A saját felhasználódnak is kell blobolvasási jog, ha a portál a bejelentkezett fiókkal listázza a fájlokat.
-
-### 3. Azure AI Search
-
-1. Az Azure Portalon: **Erőforrás létrehozása**.
-2. Keress az **Azure AI Search** szolgáltatásra.
-3. **Létrehozás**.
-4. Töltsd ki a mezőket.
-   - Név: `mentor-ai-search`
-   - A hely egyezzen a tárfiókéval, és támogassa az agentic retrievalt.
-   - Tarifacsomag: **Basic**
-5. A Basic díja keresőegységenként óránként számolódik. Az USA keleti régió publikus ára 2026 novemberében 0,101 USD óránként, egy egységgel ez nagyjából havi 74 USD. A forintösszeg az árfolyamtól függ. A szolgáltatás akkor is fizet, ha nem kérdezel. A gyakorlat végén töröld.
-6. A Foundry IQ tudásbázisához Basic vagy magasabb kell, mert a felügyelt identitás a Free szinten nem elérhető.
-7. **Felülvizsgálat és létrehozás**, majd **Létrehozás**.
-8. A keresőn kapcsold be a szerepkör-alapú hozzáférést, és hozz létre rendszer által hozzárendelt felügyelt identitást. A saját felhasználód kapja meg a **Search Service Contributor**, a **Search Index Data Contributor** és a **Search Index Data Reader** szerepet. A Foundry-erőforráson a kereső identitása kapja meg a **Cognitive Services User** szerepet.
-
-### 4. Tudásbázis a saját dokumentumokhoz
-
-Ezt a keresőszolgáltatás oldalán, az **Agentic retrieval** menüben rakod össze. A Foundry **Build > Knowledge** oldala ugyanezt a Foundry IQ réteget nyitja. A portálos Knowledge felület 2026 októberében még előnézet, az API GA része a `2026-04-01`.
-
-1. A `mentor-ai-search` erőforráson: **Agentic retrieval > Knowledge sources**.
-2. **Add knowledge source**, majd **Azure blob (Indexed)**.
-3. Név: `ai-forras-ks`. Válaszd ki az előfizetést, a tárfiókot és az `ai-forras` tárolót.
-4. Hitelesítés: felügyelt identitás, rendszer által hozzárendelt.
-5. **Enable text vectorization > Add vectorizer**. Kind: **Microsoft Foundry**. Válaszd ki a projektet és a beágyazó deploymentet. Hitelesítés: rendszer által hozzárendelt identitás.
-6. Mentsd a vectorizert, majd hozd létre a knowledge source-t. A portál ettől létrehozza az adatforrást, a skillsetet, az indexet és az indexert.
-7. **Agentic retrieval > Knowledge bases > Add knowledge base**.
-8. Név: `ai-forras-kb`.
-9. **Chat completion model > Add model deployment**. Kind: **Microsoft Foundry**, majd a `gpt-5.4-mini` vagy a `gpt-5.6-luna` deployment. Ha a varázsló ezeket nem kínálja fel, a listában szereplő chat modellt telepítsd a tudásbázishoz. A játszótéri beszélgetéshez a képzés modelljei ettől még megmaradnak. A portál dokumentált listája szűkebb tud lenni, mint a katalógus.
-10. Knowledge source: `ai-forras-ks`. Hozd létre a tudásbázist.
-11. A tudásbázis chat mezőjében kérdezz rá egy olyan tényre, ami a feltöltött fájlban van. A válasz mellett a forrás hivatkozása is jelenjen meg.
-12. **Search management** alatt nézd meg, hogy az indexer hibátlanul lefutott-e. Új fájlnál töltsd fel a blobot, majd futtasd újra az indexert.
-
-### 5. Webalkalmazás
+### Webalkalmazás
 
 A Chat játszótér **Deploy to a web app** gombja a Foundry classic felülethez tartozik, és a kivezetett On Your Data bekötésre épült. Az új Foundry nézetben ez a gomb nem a saját dokumentumos közzététel útja.
 
-Az új felületen a webes csevegő egy agent. **Build > Agents** alatt létrehozod az agentet, hozzáadod a Foundry IQ tudásbázist, majd verziót készítesz belőle. A webalkalmazás közzététele ehhez a verzióhoz kötődik. A Copilotba és a Teamsbe publikálás 2026 októberében általánosan elérhető. A klasszikus, B1-es App Service-re pakoló űrlap (név, előfizetés, erőforráscsoport, régió, chat history) csak a classic portálon, saját adat nélkül használható biztosan.
+Az új felületen a webes csevegő az ügynök. A képzés ellenőrzése az ügynök beszélgetése: a válasz a projektben lévő fájlból jöjjön.
 
-A képzés ellenőrzése a tudásbázis chatje és a modell játszótér. Webes közzétételnél az App Service a választott csomag szerint fizet. Ha a kész app Microsoft-bejelentkezést kér, az a bérlőre korlátozott hitelesítés. **Accept** után lehet beszélgetni.
-
-### 6. Példa kérdések
+### Példa kérdések
 
 Ezek a feltöltött képzési segédanyagokra kérdeznek rá:
 
