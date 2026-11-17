@@ -43,12 +43,12 @@ A rendszerpromptot, a temperature értéket és az eszközöket (webes keresés,
 
 ## Saját adatforrás
 
-A képzési fájlok a lab indulásakor felkerülnek a Foundry projektbe. Az **Adatok > Fájlok** alatt látod őket. Saját gépről nem kell feltölteni, és tárfiókot sem kell választani.
+A képzési fájlok a lab indulásakor felkerülnek a Foundry projektbe, és bekerülnek a `ceges-dokumentumok` vektorindexbe. Az **Adatok > Adatkészletek** alatt `assistant-` kezdetű névvel látod a fájlokat. Saját gépről nem kell feltölteni, és tárfiókot sem kell választani.
 
-1. Nyisd meg a [Foundry portált](https://ai.azure.com/), és a **projekt** projektet.
-2. **Ügynökök**, majd hozz létre egy ügynököt a `gpt-5-mini` modellel.
-3. Adj hozzá **Fájlkeresés** eszközt, és válaszd ki a már bent lévő fájlokat.
-4. Kérdezz rá egy olyan tényre, ami a fájlban van. A válasz a feltöltött anyagból jöjjön.
+1. Nyisd meg a [Foundry portált](https://ai.azure.com/), és a `gpt-5-mini` demókörnyezetét.
+2. **Hozzáadás**, majd **Fájlkeresés**.
+3. **Indexbeállítás**: a `ceges-dokumentumok` index. Fájlt ne húzz be a gépről.
+4. **Csatolás**, majd kérdezz rá egy olyan tényre, ami a fájlban van. A válasz a feltöltött anyagból jöjjön.
 
 ### Webalkalmazás
 
