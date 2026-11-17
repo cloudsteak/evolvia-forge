@@ -17,7 +17,7 @@ A képzés egy chat modellt telepít, Global standard típusban:
 
 - `gpt-5-mini`, verzió `2025-08-07`. A gyakorló csevegéshez ez a modell van telepítve.
 
-A katalógusban 2026 októberére a GPT-5.5, a GPT-5.6 (`sol`, `terra`, `luna`) és a GPT-6 vonal is elérhető. Ezen a képzésen a `gpt-5-mini` deploymenttel dolgozunk. Beágyazáshoz a `text-embedding-3-large` az aktuális javasolt modell. A `text-embedding-ada-002` még telepíthető, de egy meglévő index beágyazását nem lehet modellváltással átrakni: új vektorokat kell képezni.
+A katalógusban 2026 októberére a GPT-5.5, a GPT-5.6 (`sol`, `terra`, `luna`) és a GPT-6 vonal is elérhető. Ezen a képzésen a `gpt-5-mini` és a `text-embedding-3-large` deploymenttel dolgozunk.
 
 ## Hogyan kezdjük el?
 

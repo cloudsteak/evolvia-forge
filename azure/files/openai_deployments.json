@@ -8,11 +8,11 @@
     "capacity": 250
   },
   "embedding_model": {
-    "name": "text-embedding-ada-002",
+    "name": "text-embedding-3-large",
     "model_format": "OpenAI",
-    "model_name": "text-embedding-ada-002",
-    "model_version": "2",
+    "model_name": "text-embedding-3-large",
+    "model_version": "1",
     "scale_type": "GlobalStandard",
-    "capacity": 150
+    "capacity": 120
   }
 }
