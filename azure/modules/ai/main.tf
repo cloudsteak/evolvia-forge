@@ -60,10 +60,14 @@ resource "azurerm_role_assignment" "deployer_foundry_user" {
 }
 
 resource "terraform_data" "project_files" {
-  depends_on = [azurerm_role_assignment.deployer_foundry_user]
+  depends_on = [
+    azurerm_role_assignment.deployer_foundry_user,
+    azurerm_cognitive_deployment.this,
+  ]
 
   triggers_replace = {
-    endpoint = "https://${azurerm_cognitive_account.this.custom_subdomain_name}.services.ai.azure.com/api/projects/${azurerm_cognitive_account_project.this.name}/openai/v1/files"
+    endpoint     = "https://${azurerm_cognitive_account.this.custom_subdomain_name}.services.ai.azure.com/api/projects/${azurerm_cognitive_account_project.this.name}/openai/v1"
+    vector_store = "ceges-dokumentumok"
     docs = sha256(join("", [
       for name in sort(fileset(local.doc_directory, "*")) : filesha256("${local.doc_directory}/${name}")
     ]))
@@ -72,8 +76,8 @@ resource "terraform_data" "project_files" {
   provisioner "local-exec" {
     command = "bash ${path.module}/upload-docs.sh"
     environment = {
-      DOC_DIR                = local.doc_directory
-      PROJECT_FILES_ENDPOINT = "https://${azurerm_cognitive_account.this.custom_subdomain_name}.services.ai.azure.com/api/projects/${azurerm_cognitive_account_project.this.name}/openai/v1/files"
+      DOC_DIR                 = local.doc_directory
+      PROJECT_OPENAI_ENDPOINT = "https://${azurerm_cognitive_account.this.custom_subdomain_name}.services.ai.azure.com/api/projects/${azurerm_cognitive_account_project.this.name}/openai/v1"
     }
   }
 }
