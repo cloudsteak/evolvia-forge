@@ -67,31 +67,3 @@ resource "azurerm_cognitive_deployment" "this" {
 
   depends_on = [azurerm_cognitive_account_project.this]
 }
-
-resource "azurerm_search_service" "this" {
-  name                = "search-${random_string.this.result}"
-  resource_group_name = var.resource_group_name
-  location            = var.location
-  sku                 = "basic"
-
-  local_authentication_enabled = true
-  authentication_failure_mode  = "http403"
-}
-
-resource "azurerm_storage_container" "this" {
-  count                 = var.is_rag_files ? 1 : 0
-  name                  = var.doc_container_name
-  storage_account_name  = var.rag_storage_account_name
-  container_access_type = var.doc_container_access_type
-  depends_on            = [var.rag_storage_account_name]
-}
-
-resource "azurerm_storage_blob" "this" {
-  for_each               = var.is_rag_files ? fileset(var.local_doc_directory_path, "*.*") : []
-  name                   = each.value
-  storage_account_name   = var.rag_storage_account_name
-  storage_container_name = azurerm_storage_container.this[0].name
-  type                   = "Block"
-  source                 = "${var.local_doc_directory_path}/${each.value}"
-  depends_on             = [azurerm_storage_container.this]
-}
