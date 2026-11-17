@@ -13,12 +13,11 @@ Amit ezen a képzésen használunk:
 - **Azure AI Search**, a portálon Foundry IQ néven is. Ez adja a saját dokumentumok indexelését és a tudásbázist.
 - **Azure Machine Learning** és **Azure Databricks** külön adat- és modellplatform. Új csevegőalkalmazást a Foundry Agent Service-ben érdemes kezdeni. Az Assistants API 2026. augusztus 26-án megszűnt.
 
-A képzés két chat modellt telepít, mindkettő Global standard típusban:
+A képzés egy chat modellt telepít, Global standard típusban:
 
-- `gpt-5.4-mini`, verzió `2026-03-17`. Rövidebb, olcsóbb csevegéshez. A kontextusablak 400 000 token.
-- `gpt-5.6-luna`, verzió `2026-07-09`. Nagyobb következtető modell, 1 050 000 tokenes ablakkal.
+- `gpt-5-mini`, verzió `2025-08-07`. A gyakorló csevegéshez ez a modell van telepítve.
 
-A katalógusban 2026 októberére a GPT-5.5, a GPT-5.6 (`sol`, `terra`, `luna`) és a GPT-6 vonal is elérhető. Ezen a képzésen a fenti két deploymenttel dolgozunk. Beágyazáshoz a `text-embedding-3-large` az aktuális javasolt modell. A `text-embedding-ada-002` még telepíthető, de egy meglévő index beágyazását nem lehet modellváltással átrakni: új vektorokat kell képezni.
+A katalógusban 2026 októberére a GPT-5.5, a GPT-5.6 (`sol`, `terra`, `luna`) és a GPT-6 vonal is elérhető. Ezen a képzésen a `gpt-5-mini` deploymenttel dolgozunk. Beágyazáshoz a `text-embedding-3-large` az aktuális javasolt modell. A `text-embedding-ada-002` még telepíthető, de egy meglévő index beágyazását nem lehet modellváltással átrakni: új vektorokat kell képezni.
 
 ## Hogyan kezdjük el?
 
@@ -27,7 +26,7 @@ Nyisd meg a [Microsoft Foundry](https://ai.azure.com/) portált, és kapcsold be
 ### Deployment létrehozása
 
 1. A Foundry portálon menj a **Build > Catalog > Model Catalog** oldalra.
-2. Válaszd a `gpt-5.4-mini` modellt. A nagyobb feladatokhoz ismételd meg a lépéseket a `gpt-5.6-luna` modellel.
+2. Válaszd a `gpt-5-mini` modellt.
 3. **Deploy > Default settings**, ha az alapértelmezett név és a Global standard megfelel. Egyedi névhez a **Deploy > Custom settings** való.
 4. Az Azure által árult modelleknél, így ezeknél a GPT-knél, nincs Marketplace-előfizetés. Partner modellnél (például Llama) a feltételeket el kell fogadni.
 5. A sikeres deployment után a játszótér nyílik meg. A listát a **Build > Models** alatt látod. A státusz **Succeeded** legyen.
@@ -60,7 +59,7 @@ A tudásbázis két helyen fogyaszt tokent: az Azure AI Search az agentic retrie
 4. **Létrehozás**.
 5. Töltsd ki a mezőket. Tarifacsomag: **Standard S0**. A projekt a Foundry-erőforrással együtt jön létre.
 6. **Felülvizsgálat és létrehozás**, majd **Létrehozás**.
-7. A [Foundry portálon](https://ai.azure.com/) telepítsd a `gpt-5.4-mini` vagy a `gpt-5.6-luna` deploymentet, és egy beágyazó modellt. Új indexhez a `text-embedding-3-large` a javasolt. A képzés meglévő `text-embedding-ada-002` deploymentje csak akkor jó, ha az indexet is ezzel építed.
+7. A [Foundry portálon](https://ai.azure.com/) telepítsd a `gpt-5-mini` deploymentet, és egy beágyazó modellt. Új indexhez a `text-embedding-3-large` a javasolt. A képzés meglévő `text-embedding-ada-002` deploymentje csak akkor jó, ha az indexet is ezzel építed.
 
 ### 2. Azure tárfiók
 
@@ -103,7 +102,7 @@ Ezt a keresőszolgáltatás oldalán, az **Agentic retrieval** menüben rakod ö
 6. Mentsd a vectorizert, majd hozd létre a knowledge source-t. A portál ettől létrehozza az adatforrást, a skillsetet, az indexet és az indexert.
 7. **Agentic retrieval > Knowledge bases > Add knowledge base**.
 8. Név: `ai-forras-kb`.
-9. **Chat completion model > Add model deployment**. Kind: **Microsoft Foundry**, majd a `gpt-5.4-mini` vagy a `gpt-5.6-luna` deployment. Ha a varázsló ezeket nem kínálja fel, a listában szereplő chat modellt telepítsd a tudásbázishoz. A játszótéri beszélgetéshez a képzés modelljei ettől még megmaradnak. A portál dokumentált listája szűkebb tud lenni, mint a katalógus.
+9. **Chat completion model > Add model deployment**. Kind: **Microsoft Foundry**, majd a `gpt-5-mini` deployment. Ha a varázsló ezt nem kínálja fel, a listában szereplő chat modellt telepítsd a tudásbázishoz. A játszótéri beszélgetéshez a képzés modellje ettől még megmarad. A portál dokumentált listája szűkebb tud lenni, mint a katalógus.
 10. Knowledge source: `ai-forras-ks`. Hozd létre a tudásbázist.
 11. A tudásbázis chat mezőjében kérdezz rá egy olyan tényre, ami a feltöltött fájlban van. A válasz mellett a forrás hivatkozása is jelenjen meg.
 12. **Search management** alatt nézd meg, hogy az indexer hibátlanul lefutott-e. Új fájlnál töltsd fel a blobot, majd futtasd újra az indexert.
